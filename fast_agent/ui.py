@@ -297,7 +297,8 @@ class GradioUI:
                  file_upload_folder: str | None = None, 
                  reset_agent_memory: bool = False,
                  name: str | None = None,
-                 description: str | None = None):
+                 description: str | None = None,
+                 tools: list | None = None):
         if not _is_package_available("gradio"):
             raise ModuleNotFoundError(
                 "Please install 'gradio' extra to use the GradioUI: `pip install 'smolagents[gradio]'`"
@@ -307,6 +308,7 @@ class GradioUI:
         self.reset_agent_memory = reset_agent_memory
         self.name = name or getattr(agent, "name") or "Agent interface"
         self.description = description or getattr(agent, "description", None)
+        self.tools = tools or getattr(agent, "tools", [])
         if self.file_upload_folder is not None:
             if not self.file_upload_folder.exists():
                 self.file_upload_folder.mkdir(parents=True, exist_ok=True)
@@ -427,6 +429,31 @@ class GradioUI:
                 height: 65vh; 
                 min-height: 400px; 
             }
+            .tools-panel {
+                background: #f8f9fa;
+                border-radius: 8px;
+                padding: 15px;
+                margin-right: 15px;
+                height: 65vh;
+                overflow-y: auto;
+            }
+            .tool-item {
+                background: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                padding: 10px;
+                margin-bottom: 8px;
+            }
+            .tool-name {
+                font-weight: 600;
+                color: #2563eb;
+                margin-bottom: 4px;
+            }
+            .tool-description {
+                font-size: 12px;
+                color: #666;
+                line-height: 1.4;
+            }
             .input-container { 
                 padding: 15px 0; 
                 gap: 10px;
@@ -470,38 +497,60 @@ class GradioUI:
                             elem_id="description"
                         )
 
-            # Main chat interface - takes up most of the space
-            chatbot = gr.Chatbot(
-                type="messages",
-                avatar_images=(
-                    None
-                ),
-                height=500,
-                elem_classes="chat-container",
-                latex_delimiters=[
-                    {"left": "$$", "right": "$$", "display": True},
-                    {"left": "$", "right": "$", "display": False},
-                    {"left": r"\[", "right": r"\]", "display": True},
-                    {"left": r"\(", "right": r"\)", "display": False},
-                ],
-                show_copy_button=True,
-            )
-
-            # Bottom input area
+            # Main content area with tools panel and chat
             with gr.Row():
-                with gr.Column(scale=6):
-                    text_input = gr.Textbox(
-                        placeholder="Type your message here...",
-                        container=True,
-                        show_label=False,
-                        lines=4,
-                        max_lines=4,
+                # Left sidebar for tools
+                with gr.Column(scale=1, min_width=250):
+                    with gr.Group(elem_classes="tools-panel"):
+                        if self.tools:
+                            tools_html = f"<div class='tools-container'>🛠️ Available Tools({len(self.tools)})</div>"
+                            for tool in self.tools:
+                                tool_name = getattr(tool, 'name', str(tool))
+                                tool_description = getattr(tool, 'description', 'No description available')
+                                tools_html += f"""
+                                <div class="tool-item">
+                                    <div class="tool-name">{tool_name}</div>
+                                    <div class="tool-description">{tool_description}</div>
+                                </div>
+                                """
+                            gr.HTML(tools_html)
+                        else:
+                            gr.Markdown("*No tools available*")
+                
+                # Right side for chat interface
+                with gr.Column(scale=3):
+                    # Main chat interface - takes up most of the space
+                    chatbot = gr.Chatbot(
+                        type="messages",
+                        avatar_images=(
+                            None
+                        ),
+                        height=500,
+                        elem_classes="chat-container",
+                        latex_delimiters=[
+                            {"left": "$$", "right": "$$", "display": True},
+                            {"left": "$", "right": "$", "display": False},
+                            {"left": r"\[", "right": r"\]", "display": True},
+                            {"left": r"\(", "right": r"\)", "display": False},
+                        ],
+                        show_copy_button=True,
                     )
-                with gr.Column(scale=1, min_width=120):
+
+                    # Bottom input area
                     with gr.Row():
-                        with gr.Column():
-                            submit_btn = gr.Button("Send", variant="primary")
-                            clear_btn = gr.Button("Clear", variant="secondary")
+                        with gr.Column(scale=6):
+                            text_input = gr.Textbox(
+                                placeholder="Type your message here...",
+                                container=True,
+                                show_label=False,
+                                lines=4,
+                                max_lines=4,
+                            )
+                        with gr.Column(scale=1, min_width=120):
+                            with gr.Row():
+                                with gr.Column():
+                                    submit_btn = gr.Button("Send", variant="primary")
+                                    clear_btn = gr.Button("Clear", variant="secondary")
 
             # File upload and footer row
             with gr.Row():

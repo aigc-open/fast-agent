@@ -18,16 +18,13 @@ def run(workspace: str = "./workspace"):
         pass
     from fast_agent.tools import tools_list
     from fast_agent.ui import GradioUI
-    model = OpenAIServerModel(
-                    model_id=os.environ.get("OPENAI_MODEL"),
-                    api_key=os.environ.get("OPENAI_API_KEY"),
-                    api_base=os.environ.get("OPENAI_BASE_URL")
-                )
-    agent = ToolCallingAgent(tools=tools_list, model=model, stream_outputs=False)
+    from fast_agent.llm import llm
+    agent = ToolCallingAgent(tools=tools_list, model=llm, stream_outputs=True)
     agent.max_steps = 10
     GradioUI(agent, reset_agent_memory=False, 
              name="Fast Agent", 
-             description="快速实现AI智能体").launch(share=False)
+             description="快速实现AI智能体",
+             tools=tools_list).launch(share=False)
 
 if __name__ == "__main__":
     from fire import Fire
