@@ -19,7 +19,7 @@ def run(workspace: str = "./workspace"):
     from fast_agent.tools import tools_list
     from fast_agent.ui import GradioUI
     from fast_agent.llm import llm
-    agent = ToolCallingAgent(tools=tools_list, model=llm, stream_outputs=True)
+    agent = ToolCallingAgent(tools=tools_list, model=llm, stream_outputs=False)
     agent.max_steps = 10
     GradioUI(agent, reset_agent_memory=False, 
              name="Fast Agent", 
